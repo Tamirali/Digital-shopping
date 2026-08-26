@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏪 Digital Store & WhatsApp Catalog</title>
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #0984e3;
+            --primary-dark: #0652DD;
+            --whatsapp: #25D366;
+            --bg: #f4f6f9;
+            --card: #ffffff;
+            --text: #2d3436;
+            --border: #e2e8f0;
+            --red: #ff6b6b;
+            --green: #27ae60;
+            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 16px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+        }
+        header h1 {
+            font-size: 20px;
+            color: var(--primary-dark);
+        }
+        .lang-btn {
+            background: #eee;
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tabs {
+            display: flex;
+            gap: 6px;
+            background: #eee;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card {
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        input, textarea, select, button {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-whatsapp { background: var(--whatsapp); color: white; border: none; width: 100%; font-size: 16px; }
+        .btn-red { background: var(--red); color: white; border: none; }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .stat-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-box span { font-size: 11px; color: #666; display: block; }
+        .stat-box strong { font-size: 16px; color: var(--primary-dark); }
+        .category-filters {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+            padding-bottom: 4px;
+        }
+        .cat-pill {
+            background: #eee;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .cat-pill.active {
+            background: var(--primary);
+            color: white;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .product-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        .out-of-stock-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .choose-cat-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(9, 132, 227, 0.9);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            z-index: 2;
+            cursor: pointer;
+        }
+        .product-card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        .product-details {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .product-title { font-weight: bold; font-size: 14px; }
+        .product-price { color: #00b894; font-weight: bold; font-size: 15px; }
+        .product-stock-info { font-size: 11px; color: #666; }
+        #imgPreview {
+            max-width: 100%;
+            height: 120px;
+            object-fit: contain;
+            display: none;
+            margin-top: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .info { font-size: 12px; color: var(--green); font-weight: bold; }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding: 8px 0;
+        }
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .qty-btn {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border-radius: 4px;
+            background: #eee;
+            border: 1px solid #ccc;
+        }
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px 0;
+        }
+        #qrcodeContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+        }
+        #qrcode { margin: 10px 0; }
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        .modal-close {
+            position: absolute; top: 15px; right: 20px; color: #fff; font-size: 35px; font-weight: bold; cursor: pointer; z-index: 1001;
+            background: rgba(0,0,0,0.5); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .modal-container img { max-width: 90%; max-height: 85%; }
+        @media (max-width: 480px) {
+            .product-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 id="storeTitle">🏪 मेरी डिजिटल दुकान</h1>
+        <button class="lang-btn" onclick="toggleLanguage()"><span id="langText">English</span></button>
+    </header>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('store', this)" data-i18n="tabStore">🛍️ दुकान</button>
+        <button class="tab-btn" onclick="switchTab('cart', this)" data-i18n="tabCart">🛒 कार्ट (<span id="cartCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('admin', this)" data-i18n="tabAdmin">⚙️ एडमिन</button>
+    </div>
+
+    <!-- TAB 1: STORE -->
+    <div id="tab-store" class="tab-content active">
+        <div id="storeHeaderArea" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 id="catalogHeading" data-i18n="storeHeading">सामान की सूची</h3>
+            <button id="backToHomeBtn" class="cat-pill" style="display:none; background:#ccc;" onclick="goHomeCatalog()" data-i18n="backHome">⬅️ होम</button>
+        </div>
+        <div class="category-filters" id="categoryFilters"></div>
+        <div id="productList" class="product-grid"></div>
+        <div id="paginationArea" class="pagination-container" style="display:none;">
+            <button class="btn-primary" id="prevPageBtn" onclick="changePage(-1)" style="padding: 6px 12px; font-size: 12px;" disabled data-i18n="prevBtn">⬅️ पिछला</button>
+            <span id="pageIndicator" style="font-size: 13px; font-weight: bold; color: #666;">पेज 1</span>
+            <button class="btn-primary" id="nextPageBtn" onclick="changePage(1)" style="padding: 6px 12px; font-size: 12px;" data-i18n="nextBtn">अगला ➡️</button>
+        </div>
+    </div>
+
+    <!-- TAB 2: CART -->
+    <div id="tab-cart" class="tab-content">
+        <h3 data-i18n="cartHeading">🛒 आपकी कार्ट</h3>
+        <div id="cartItems" style="margin-top: 10px;"></div>
+        <div class="card" style="margin-top: 15px;">
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <input type="text" id="couponInput" placeholder="कूपन कोड (जैसे SAVE10)" style="flex:1;">
+                <button class="btn-primary" onclick="applyCoupon()" data-i18n="applyBtn">लागू करें</button>
+            </div>
+            <div id="couponMsg" style="font-size:12px; color:var(--green); margin-bottom:8px;"></div>
+            <h4 data-i18n="custDetails">ग्राहक विवरण</h4>
+            <div class="form-group">
+                <input type="text" id="custName" placeholder="आपका नाम">
+                <input type="text" id="custAddress" placeholder="पूरा पता / डिलीवरी लोकेशन">
+            </div>
+            <div style="display:flex; justify-content: space-between; font-size:14px; margin-top: 10px;">
+                <span data-i18n="subtotal">सब-टोटल:</span>
+                <span id="cartSubtotal">₹ 0.00</span>
+            </div>
+            <div style="display:flex; justify-content: space-between; font-size:14px; color:#e74c3c;">
+                <span data-i18n="discount">छूट:</span>
+                <span id="cartDiscount">- ₹ 0.00</span>
+            </div>
+            <div style="display:flex; justify-content: space-between; font-weight:bold; font-size:16px; margin: 8px 0; border-top:1px solid #eee; padding-top:6px;">
+                <span data-i18n="grandTotal">कुल योग:</span>
+                <span id="cartTotal" style="color: #00b894;">₹ 0.00</span>
+            </div>
+            <div id="qrcodeContainer" style="display:none;">
+                <span style="font-size:12px; font-weight:bold; color:#333;" data-i18n="scanPay">📱 UPI से भुगतान करें:</span>
+                <div id="qrcode"></div>
+                <span id="upiIdDisplay" style="font-size:11px; color:#666;"></span>
+            </div>
+            <button class="btn-whatsapp" style="margin-top: 12px;" onclick="sendWhatsAppOrder()" data-i18n="waBtn">📲 WhatsApp पर ऑर्डर भेजें</button>
+        </div>
+    </div>
+
+    <!-- TAB 3: ADMIN -->
+    <div id="tab-admin" class="tab-content">
+        <div class="card" style="border-left: 4px solid var(--primary);">
+            <h3 data-i18n="fbSetup">🔌 फ़ायरबेस API सेटअप</h3>
+            <p style="font-size: 11px; color: #666; margin-bottom: 8px;" data-i18n="fbDesc">अपना Firebase Config JSON यहाँ पेस्ट करें।</p>
+            <div class="form-group">
+                <textarea id="firebaseConfigInput" rows="3" placeholder='{"apiKey":"...", ...}'></textarea>
+                <button class="btn-primary" style="font-size:12px; padding:6px;" onclick="saveFirebaseConfig()" data-i18n="connectBtn">कनेक्ट करें & सेव करें</button>
+            </div>
+        </div>
+        <div id="loginSection" class="card">
+            <h3 data-i18n="loginHeading">🔐 एडमिन लॉगिन</h3>
+            <div class="form-group">
+                <input type="email" id="loginEmail" placeholder="ईमेल">
+                <input type="password" id="loginPassword" placeholder="पासवर्ड">
+                <button class="btn-primary" onclick="loginAdmin()" data-i18n="loginBtn">लॉगिन करें</button>
+            </div>
+        </div>
+        <div id="adminDashboard" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 13px; color: var(--green); font-weight: bold;" data-i18n="loggedIn">✅ एडमिन लॉग-इन है</span>
+                <button class="btn-red" style="padding: 5px 10px; font-size: 12px;" onclick="logoutAdmin()" data-i18n="logoutBtn">🚪 लॉगआउट</button>
+            </div>
+            <div class="card" style="background:#e8f4fd;">
+                <h4 style="font-size:13px;" data-i18n="shareStore">🔗 अपनी दुकान का लिंक शेयर करें:</h4>
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <input type="text" id="shareLinkBox" readonly style="flex:1; font-size:12px; background:#fff;">
+                    <button class="btn-primary" style="font-size:12px;" onclick="copyStoreLink()" data-i18n="copyBtn">कॉपी करें</button>
+                </div>
+            </div>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <span data-i18n="totalProdStat">कुल प्रोडक्ट्स</span>
+                    <strong id="statTotal">0</strong>
+                </div>
+                <div class="stat-box">
+                    <span data-i18n="inStockStat">स्टॉक में</span>
+                    <strong id="statInStock" style="color: var(--green);">0</strong>
+                </div>
+                <div class="stat-box">
+                    <span data-i18n="outStockStat">स्टॉक खत्म</span>
+                    <strong id="statOutStock" style="color: var(--red);">0</strong>
+                </div>
+            </div>
+            <div class="card">
+                <h3 data-i18n="shopInfoHeading">⚙️ दुकान, UPI और लोकेशन</h3>
+                <div class="form-group">
+                    <input type="text" id="shopNameInput" placeholder="दुकान का नाम">
+                    <input type="tel" id="shopPhoneInput" placeholder="WhatsApp नंबर (जैसे 919876543210)">
+                    <input type="text" id="shopUpiInput" placeholder="UPI ID (जैसे: dukaan@paytm)">
+                    <input type="text" id="shopLocationInput" placeholder="दुकान का पता / Google Maps लिंक">
+                    <button class="btn-primary" onclick="saveShopDetails()" data-i18n="saveInfoBtn">जानकारी सेव करें</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3 data-i18n="addProductHeading">+ नया प्रोडक्ट जोड़ें</h3>
+                <div class="form-group">
+                    <input type="text" id="prodName" placeholder="प्रोडक्ट का नाम">
+                    <input type="number" id="prodPrice" placeholder="कीमत ₹">
+                    <input type="number" id="prodStockQty" placeholder="स्टॉक मात्रा" value="10">
+                    <input type="text" id="prodCategory" placeholder="कैटेगरी (जैसे: राशन, कपड़े)">
+                    <label style="font-size: 13px; font-weight: bold;" data-i18n="photoLabel">फोटो चुनें:</label>
+                    <input type="file" id="prodFile" accept="image/*" onchange="compressAndPreviewImage(event)">
+                    <img id="imgPreview" alt="Preview">
+                    <div class="info" id="fileInfo"></div>
+                    <button class="btn-primary" id="addBtn" onclick="addProduct()" data-i18n="uploadBtn">प्रोडक्ट अपलोड करें</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3 data-i18n="existingProducts">मौजूदा प्रोडक्ट्स</h3>
+                <div id="adminProductList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IMAGE ZOOM MODAL -->
+<div id="zoomModal" class="image-modal">
+    <span class="modal-close" onclick="closeZoomModal()">&times;</span>
+    <div class="modal-container" id="modalContainer">
+        <img id="zoomedImage" src="" alt="Zoomed">
+    </div>
+</div>
+
+<script>
+    // ======== LANGUAGE DICTIONARY ========
+    let currentLang = 'hi';
+    const dict = {
+        hi: {
+            langName: "English",
+            tabStore: "🛍️ दुकान",
+            tabCart: "🛒 कार्ट",
+            tabAdmin: "⚙️ एडमिन",
+            storeHeading: "सामान की सूची",
+            backHome: "⬅️ होम",
+            allCat: "सभी",
+            cartHeading: "🛒 आपकी कार्ट",
+            applyBtn: "लागू करें",
+            custDetails: "ग्राहक विवरण",
+            subtotal: "सब-टोटल:",
+            discount: "छूट:",
+            grandTotal: "कुल योग:",
+            scanPay: "📱 UPI से भुगतान करें:",
+            waBtn: "📲 WhatsApp पर ऑर्डर भेजें",
+            fbSetup: "🔌 फ़ायरबेस API सेटअप",
+            fbDesc: "अपना Firebase Config JSON यहाँ पेस्ट करें।",
+            connectBtn: "कनेक्ट करें & सेव करें",
+            loginHeading: "🔐 एडमिन लॉगिन",
+            loginBtn: "लॉगिन करें",
+            loggedIn: "✅ एडमिन लॉग-इन है",
+            logoutBtn: "🚪 लॉगआउट",
+            shareStore: "🔗 अपनी दुकान का लिंक शेयर करें:",
+            copyBtn: "कॉपी करें",
+            shopInfoHeading: "⚙️ दुकान, UPI और लोकेशन",
+            saveInfoBtn: "जानकारी सेव करें",
+            addProductHeading: "+ नया प्रोडक्ट जोड़ें",
+            photoLabel: "फोटो चुनें:",
+            uploadBtn: "प्रोडक्ट अपलोड करें",
+            existingProducts: "मौजूदा प्रोडक्ट्स",
+            outOfStockText: "स्टॉक खत्म",
+            chooseCatText: "देखें",
+            nextBtn: "अगला ➡️",
+            prevBtn: "⬅️ पिछला",
+            totalProdStat: "कुल प्रोडक्ट्स",
+            inStockStat: "स्टॉक में",
+            outStockStat: "स्टॉक खत्म",
+            addToCart: "कार्ट में जोड़ें",
+            stockLeft: "स्टॉक शेष",
+            pieces: "पीस",
+            emptyCart: "कार्ट खाली है",
+            page: "पेज",
+            noProducts: "अभी कोई प्रोडक्ट नहीं जोड़ा गया है। एडमिन पैनल से प्रोडक्ट जोड़ें।",
+            noProductsCat: "इस कैटेगरी में कोई प्रोडक्ट नहीं है।",
+            clickToView: "देखने के लिए क्लिक करें ➡️",
+            productsCount: "प्रोडक्ट्स"
+        },
+        en: {
+            langName: "हिंदी",
+            tabStore: "🛍️ Store",
+            tabCart: "🛒 Cart",
+            tabAdmin: "⚙️ Admin",
+            storeHeading: "Product Catalog",
+            backHome: "⬅️ Home",
+            allCat: "All",
+            cartHeading: "🛒 Your Cart",
+            applyBtn: "Apply",
+            custDetails: "Customer Details",
+            subtotal: "Subtotal:",
+            discount: "Discount:",
+            grandTotal: "Grand Total:",
+            scanPay: "📱 Scan & Pay via UPI:",
+            waBtn: "📲 Send Order via WhatsApp",
+            fbSetup: "🔌 Firebase API Setup",
+            fbDesc: "Paste your Firebase Config JSON here.",
+            connectBtn: "Connect & Save",
+            loginHeading: "🔐 Admin Login",
+            loginBtn: "Login",
+            loggedIn: "✅ Logged In",
+            logoutBtn: "Logout",
+            shareStore: "🔗 Share Store Link:",
+            copyBtn: "Copy",
+            shopInfoHeading: "⚙️ Shop, UPI & Location",
+            saveInfoBtn: "Save Details",
+            addProductHeading: "+ Add New Product",
+            photoLabel: "Select Photo:",
+            uploadBtn: "Upload Product",
+            existingProducts: "Existing Products",
+            outOfStockText: "Out of Stock",
+            chooseCatText: "View",
+            nextBtn: "Next ➡️",
+            prevBtn: "⬅️ Previous",
+            totalProdStat: "Total Products",
+            inStockStat: "In Stock",
+            outStockStat: "Out of Stock",
+            addToCart: "Add to Cart",
+            stockLeft: "Stock left",
+            pieces: "pcs",
+            emptyCart: "Cart is empty",
+            page: "Page",
+            noProducts: "No products added yet. Add products from Admin Panel.",
+            noProductsCat: "No products in this category.",
+            clickToView: "Click to view ➡️",
+            productsCount: "Products"
+        }
+    };
+
+    // ======== i18n HELPERS ========
+    function t(key) { return dict[currentLang][key] || key; }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'hi' ? 'en' : 'hi';
+        document.getElementById('langText').innerText = dict[currentLang].langName;
+        updateTexts();
+        renderStoreView();
+        renderCart();
+        renderAdminProducts();
+    }
+
+    function updateTexts() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[currentLang][key]) {
+                // preserve inner HTML if it contains child elements (like span in cart tab)
+                if (el.children.length === 0) {
+                    el.innerText = dict[currentLang][key];
+                } else {
+                    // for elements with children, we need to update only text nodes? 
+                    // But we use data-i18n on buttons with icons, so we can replace innerHTML.
+                    el.innerHTML = dict[currentLang][key];
+                }
+            }
+        });
+        // Update cart count separately (it's a number)
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            // If it's the cart count span, skip because it has dynamic content
+            if (el.id === 'cartCount') return;
+        });
+        // Also update placeholders? Not necessary.
+    }
+
+    // ======== STORE ID FROM URL ========
+    const urlParams = new URLSearchParams(window.location.search);
+    let storeIdFromUrl = urlParams.get('store');
+    if (!storeIdFromUrl) {
+        storeIdFromUrl = 'store_' + Math.random().toString(36).substring(2, 9);
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?store=' + storeIdFromUrl;
+        window.history.replaceState({path: newUrl}, '', newUrl);
+    }
+
+    // ======== FIREBASE CONFIG ========
+    let savedConfigString = localStorage.getItem('merchant_fb_config_' + storeIdFromUrl);
+    let activeConfig = savedConfigString ? JSON.parse(savedConfigString) : null;
+
+    let db = null, auth = null;
+
+    function initFirebase(config) {
+        try {
+            if (firebase.apps.length === 0) {
+                firebase.initializeApp(config);
+            }
+            db = firebase.firestore();
+            auth = firebase.auth();
+            return true;
+        } catch (err) {
+            console.error("Firebase Init Error: ", err);
+            return false;
+        }
+    }
+
+    if (activeConfig) {
+        initFirebase(activeConfig);
+    } else {
+        // Show config textarea with placeholder
+        document.getElementById('firebaseConfigInput').placeholder = 'पहले Firebase Config पेस्ट करें...';
+    }
+
+    // ======== SAVE FIREBASE CONFIG ========
+    function saveFirebaseConfig() {
+        const rawText = document.getElementById('firebaseConfigInput').value.trim();
+        if (!rawText) return alert('कृपया कॉन्फ़िगरेशन पेस्ट करें!');
+        try {
+            let parsed = JSON.parse(rawText);
+            localStorage.setItem('merchant_fb_config_' + storeIdFromUrl, JSON.stringify(parsed));
+            alert('सफलतापूर्वक नया Firebase कनेक्ट हो गया!');
+            location.reload();
+        } catch (e) {
+            alert('अमान्य JSON फॉर्मेट!');
+        }
+    }
+
+    // ======== AUTH STATE ========
+    if (auth) {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                const currentUrl = window.location.origin + window.location.pathname + '?store=' + storeIdFromUrl;
+                document.getElementById('shareLinkBox').value = currentUrl;
+            } else {
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('adminDashboard').style.display = 'none';
+            }
+        });
+    } else {
+        // If auth not initialized, show login but maybe disabled
+        document.getElementById('loginSection').style.display = 'block';
+    }
+
+    function copyStoreLink() {
+        const copyText = document.getElementById('shareLinkBox');
+        copyText.select();
+        navigator.clipboard.writeText(copyText.value);
+        alert('दुकान का लिंक कॉपी हो गया!');
+    }
+
+    function loginAdmin() {
+        if (!auth) return alert('Firebase Auth उपलब्ध नहीं है!');
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        if (!email || !password) return alert('ईमेल और पासवर्ड भरें!');
+        auth.signInWithEmailAndPassword(email, password).catch(error => alert('लॉगिन विफल: ' + error.message));
+    }
+
+    function logoutAdmin() {
+        if (auth) auth.signOut();
+    }
+
+    // ======== TAB SWITCH ========
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        if (btnElement) btnElement.classList.add('active');
+        const targetContent = document.getElementById('tab-' + tabId);
+        if (targetContent) targetContent.classList.add('active');
+    }
+
+    // ======== IMAGE COMPRESSION ========
+    let base64Image = "";
+
+    function compressAndPreviewImage(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function(event) {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                let width = img.width, height = img.height;
+                const maxDim = 600;
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+                    else { width = Math.round((width * maxDim) / height); height = maxDim; }
+                }
+                canvas.width = width; canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                base64Image = canvas.toDataURL('image/jpeg', 0.6);
+                const preview = document.getElementById('imgPreview');
+                preview.src = base64Image;
+                preview.style.display = 'block';
+                document.getElementById('fileInfo').innerText = '✅ फोटो तैयार है';
+            };
+        };
+    }
+
+    // ======== SHOP INFO ========
+    let shopInfo = { name: '', phone: '', upi: '', location: '' };
+
+    function saveShopDetails() {
+        if (!db) return alert('डेटाबेस कनेक्टेड नहीं है!');
+        const name = document.getElementById('shopNameInput').value.trim();
+        let phone = document.getElementById('shopPhoneInput').value.trim();
+        let upi = document.getElementById('shopUpiInput').value.trim();
+        let location = document.getElementById('shopLocationInput').value.trim();
+        if (!name || !phone) return alert('नाम और WhatsApp नंबर आवश्यक है!');
+        phone = phone.replace(/[^0-9]/g, '');
+        db.collection('settings').doc('shopInfo_' + storeIdFromUrl).set({ name, phone, upi, location })
+            .then(() => alert('दुकान की जानकारी सेव हो गई!'))
+            .catch(err => alert('त्रुटि: ' + err.message));
+    }
+
+    // ======== PRODUCT CRUD ========
+    let products = [];
+
+    function addProduct() {
+        if (!db) return alert('डेटाबेस कनेक्टेड नहीं है!');
+        const name = document.getElementById('prodName').value.trim();
+        const price = parseFloat(document.getElementById('prodPrice').value);
+        const stockQty = parseInt(document.getElementById('prodStockQty').value) || 0;
+        const category = document.getElementById('prodCategory').value.trim() || 'General';
+        const addBtn = document.getElementById('addBtn');
+
+        if (!name || isNaN(price)) return alert('सही नाम और कीमत दें!');
+        if (!base64Image) return alert('फोटो चुनें!');
+
+        addBtn.innerText = 'अपलोड हो रहा...';
+        addBtn.disabled = true;
+
+        db.collection('products_' + storeIdFromUrl).add({
+            name, price, stockQty, category,
+            img: base64Image,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            alert('प्रोडक्ट सफलतापूर्वक अपलोड हो गया!');
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStockQty').value = '10';
+            document.getElementById('prodCategory').value = '';
+            document.getElementById('prodFile').value = '';
+            document.getElementById('imgPreview').style.display = 'none';
+            base64Image = "";
+            document.getElementById('fileInfo').innerText = '';
+        }).catch(err => {
+            alert('त्रुटि: ' + err.message);
+        }).finally(() => {
+            addBtn.innerText = t('uploadBtn');
+            addBtn.disabled = false;
+        });
+    }
+
+    function deleteProduct(id) {
+        if (!db) return;
+        if (confirm('हटाना चाहते हैं?')) {
+            db.collection('products_' + storeIdFromUrl).doc(id).delete().catch(err => alert('एरर: ' + err.message));
+        }
+    }
+
+    // ======== REAL-TIME LISTENERS ========
+    function loadFirebaseData() {
+        if (!db) {
+            console.warn("Firestore Database उपलब्ध नहीं है।");
+            renderStoreView();
+            renderCart();
+            renderAdminProducts();
+            return;
+        }
+
+        db.collection('settings').doc('shopInfo_' + storeIdFromUrl).onSnapshot(doc => {
+            if (doc.exists) {
+                shopInfo = doc.data();
+                document.getElementById('storeTitle').innerText = '🏪 ' + (shopInfo.name || 'मेरी डिजिटल दुकान');
+                document.getElementById('shopNameInput').value = shopInfo.name || '';
+                document.getElementById('shopPhoneInput').value = shopInfo.phone || '';
+                document.getElementById('shopUpiInput').value = shopInfo.upi || '';
+                document.getElementById('shopLocationInput').value = shopInfo.location || '';
+            } else {
+                shopInfo = { name: '', phone: '', upi: '', location: '' };
+                document.getElementById('storeTitle').innerText = '🏪 मेरी डिजिटल दुकान';
+            }
+            renderCart(); // update QR if upi changes
+        }, err => console.log("ShopInfo fetch error:", err));
+
+        db.collection('products_' + storeIdFromUrl).onSnapshot(snapshot => {
+            products = [];
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                products.push({ id: doc.id, ...data });
+            });
+            renderAdminProducts();
+            updateStockStats();
+            renderStoreView();
+        }, error => {
+            console.error("Firebase Read Error: ", error);
+            renderStoreView();
+        });
+    }
+
+    function updateStockStats() {
+        const total = products.length;
+        const inStockCount = products.filter(p => (p.stockQty !== undefined ? p.stockQty : 10) > 0).length;
+        const outStockCount = total - inStockCount;
+        document.getElementById('statTotal').innerText = total;
+        document.getElementById('statInStock').innerText = inStockCount;
+        document.getElementById('statOutStock').innerText = outStockCount;
+    }
+
+    // ======== STORE VIEW (with i18n) ========
+    let activeCategory = 'All';
+    let currentPage = 1;
+    const itemsPerPage = 20;
+
+    function renderStoreView() {
+        const grid = document.getElementById('productList');
+        const paginationArea = document.getElementById('paginationArea');
+        const backBtn = document.getElementById('backToHomeBtn');
+        const filtersDiv = document.getElementById('categoryFilters');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        // Render category pills
+        if (filtersDiv) {
+            let pillsHTML = `<button class="cat-pill ${activeCategory === 'All' ? 'active' : ''}" onclick="filterCategory('All')">${t('allCat')}</button>`;
+            const uniqueCats = [...new Set(products.map(p => p.category || 'General'))];
+            uniqueCats.forEach(cat => {
+                pillsHTML += `<button class="cat-pill ${activeCategory === cat ? 'active' : ''}" onclick="filterCategory('${cat}')">${cat}</button>`;
+            });
+            filtersDiv.innerHTML = pillsHTML;
+        }
+
+        if (products.length === 0) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#777; padding:20px;">${t('noProducts')}</p>`;
+            if (paginationArea) paginationArea.style.display = 'none';
+            if (backBtn) backBtn.style.display = 'none';
+            return;
+        }
+
+        if (activeCategory === 'All') {
+            if (backBtn) backBtn.style.display = 'none';
+            if (paginationArea) paginationArea.style.display = 'none';
+            const categories = [...new Set(products.map(p => p.category || 'General'))];
+            categories.forEach(cat => {
+                const catProducts = products.filter(p => (p.category || 'General') === cat);
+                if (catProducts.length > 0) {
+                    const sampleProd = catProducts[0];
+                    grid.innerHTML += `
+                        <div class="product-card">
+                            <div class="choose-cat-badge" onclick="filterCategory('${cat}')">${t('chooseCatText')}</div>
+                            <img src="${sampleProd.img}" alt="${cat}" onclick="filterCategory('${cat}')" style="cursor:pointer;">
+                            <div class="product-details" onclick="filterCategory('${cat}')" style="cursor:pointer;">
+                                <div class="product-title">📁 ${cat}</div>
+                                <div style="font-size:11px; color:#666;">(${catProducts.length} ${t('productsCount')})</div>
+                                <div class="product-price" style="font-size:12px; margin-top:4px;">${t('clickToView')}</div>
+                            </div>
+                        </div>`;
+                }
+            });
+        } else {
+            if (backBtn) backBtn.style.display = 'inline-block';
+            const catFiltered = products.filter(p => (p.category || 'General') === activeCategory);
+            const totalPages = Math.ceil(catFiltered.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const paginatedItems = catFiltered.slice(startIdx, startIdx + itemsPerPage);
+
+            if (paginatedItems.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#777;">${t('noProductsCat')}</p>`;
+                if (paginationArea) paginationArea.style.display = 'none';
+                return;
+            }
+
+            paginatedItems.forEach(p => {
+                const stockQty = p.stockQty !== undefined ? p.stockQty : 10;
+                const isOut = stockQty <= 0;
+                const outOfStockBadge = isOut ? `<div class="out-of-stock-badge">${t('outOfStockText')}</div>` : '';
+                const btnDisabled = isOut ? 'opacity:0.5; cursor:not-allowed;' : '';
+                grid.innerHTML += `
+                    <div class="product-card">
+                        ${outOfStockBadge}
+                        <img src="${p.img}" alt="${p.name}" onclick="openZoomModal('${p.img}')" style="cursor: pointer;">
+                        <div class="product-details">
+                            <div class="product-title">${p.name}</div>
+                            <div class="product-price">₹ ${p.price.toFixed(2)}</div>
+                            <div class="product-stock-info">${t('stockLeft')}: <strong>${stockQty}</strong> ${t('pieces')}</div>
+                            <button class="btn-primary" style="margin-top:6px; font-size:12px; ${btnDisabled}" onclick="addToCart('${p.id}')">+ ${t('addToCart')}</button>
+                        </div>
+                    </div>`;
+            });
+
+            if (catFiltered.length > itemsPerPage) {
+                paginationArea.style.display = 'flex';
+                document.getElementById('pageIndicator').innerText = `${t('page')} ${currentPage} / ${totalPages}`;
+                document.getElementById('prevPageBtn').disabled = (currentPage === 1);
+                document.getElementById('nextPageBtn').disabled = (currentPage >= totalPages);
+                // update i18n for prev/next buttons (they have data-i18n, but we already set in HTML)
+            } else {
+                paginationArea.style.display = 'none';
+            }
+        }
+    }
+
+    function filterCategory(cat) {
+        activeCategory = cat;
+        currentPage = 1;
+        renderStoreView();
+    }
+
+    function goHomeCatalog() {
+        activeCategory = 'All';
+        currentPage = 1;
+        renderStoreView();
+    }
+
+    function changePage(direction) {
+        currentPage += direction;
+        renderStoreView();
+    }
+
+    // ======== CART ========
+    let cart = [];
+    let appliedDiscountPercent = 0;
+
+    function addToCart(id) {
+        const prod = products.find(p => p.id === id);
+        const availableStock = prod && prod.stockQty !== undefined ? prod.stockQty : 10;
+        if (!prod || availableStock <= 0) return alert('यह प्रोडक्ट स्टॉक में नहीं है!');
+        const cartItem = cart.find(c => c.id === id);
+        const currentQtyInCart = cartItem ? cartItem.qty : 0;
+        if (currentQtyInCart + 1 > availableStock) {
+            alert('स्टॉक में केवल ' + availableStock + ' पीस बचे हैं!');
+            return;
+        }
+        if (cartItem) {
+            cartItem.qty++;
+        } else {
+            cart.push({ ...prod, qty: 1 });
+        }
+        renderCart();
+        alert('प्रोडक्ट कार्ट में जोड़ दिया गया!');
+    }
+
+    function updateQty(id, change) {
+        const prod = products.find(p => p.id === id);
+        const availableStock = prod && prod.stockQty !== undefined ? prod.stockQty : 10;
+        const cartItem = cart.find(c => c.id === id);
+        if (cartItem) {
+            const newQty = cartItem.qty + change;
+            if (newQty > availableStock) {
+                alert('स्टॉक सीमा! केवल ' + availableStock + ' पीस उपलब्ध।');
+                return;
+            }
+            cartItem.qty = newQty;
+            if (cartItem.qty <= 0) cart = cart.filter(c => c.id !== id);
+        }
+        renderCart();
+    }
+
+    function applyCoupon() {
+        const code = document.getElementById('couponInput').value.trim().toUpperCase();
+        if (code === 'SAVE10' || code === 'DIWALI10') {
+            appliedDiscountPercent = 10;
+            document.getElementById('couponMsg').innerText = '✅ 10% छूट लागू!';
+            document.getElementById('couponMsg').style.color = 'var(--green)';
+        } else if (code === 'SAVE20') {
+            appliedDiscountPercent = 20;
+            document.getElementById('couponMsg').innerText = '✅ 20% छूट लागू!';
+            document.getElementById('couponMsg').style.color = 'var(--green)';
+        } else {
+            appliedDiscountPercent = 0;
+            document.getElementById('couponMsg').innerText = '❌ अमान्य कूपन';
+            document.getElementById('couponMsg').style.color = '#e74c3c';
+        }
+        renderCart();
+    }
+
+    function renderCart() {
+        const cartDiv = document.getElementById('cartItems');
+        if (!cartDiv) return;
+        cartDiv.innerHTML = '';
+        let subtotal = 0, count = 0;
+
+        if (cart.length === 0) {
+            cartDiv.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">${t('emptyCart')}</p>`;
+            document.getElementById('qrcodeContainer').style.display = 'none';
+            document.getElementById('cartCount').innerText = '0';
+            document.getElementById('cartSubtotal').innerText = '₹ 0.00';
+            document.getElementById('cartDiscount').innerText = '- ₹ 0.00';
+            document.getElementById('cartTotal').innerText = '₹ 0.00';
+            return;
+        }
+
+        cart.forEach(item => {
+            const itemTotal = item.price * item.qty;
+            subtotal += itemTotal;
+            count += item.qty;
+            cartDiv.innerHTML += `
+                <div class="cart-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color:#666;">₹${item.price} x ${item.qty} = ₹${itemTotal.toFixed(2)}</small>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQty('${item.id}', -1)">-</button>
+                        <span>${item.qty}</span>
+                        <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+                    </div>
+                </div>`;
+        });
+
+        let discountAmt = (subtotal * appliedDiscountPercent) / 100;
+        let total = subtotal - discountAmt;
+
+        document.getElementById('cartCount').innerText = count;
+        document.getElementById('cartSubtotal').innerText = '₹ ' + subtotal.toFixed(2);
+        document.getElementById('cartDiscount').innerText = '- ₹ ' + discountAmt.toFixed(2);
+        document.getElementById('cartTotal').innerText = '₹ ' + total.toFixed(2);
+
+        const qrContainer = document.getElementById('qrcodeContainer');
+        const qrDiv = document.getElementById('qrcode');
+        const upiDisplay = document.getElementById('upiIdDisplay');
+
+        if (shopInfo.upi && total > 0) {
+            qrContainer.style.display = 'flex';
+            qrDiv.innerHTML = '';
+            const upiString = `upi://pay?pa=${shopInfo.upi}&pn=${encodeURIComponent(shopInfo.name || 'Store')}&am=${total.toFixed(2)}&cu=INR`;
+            upiDisplay.innerText = `UPI: ${shopInfo.upi}`;
+            try {
+                new QRCode(qrDiv, { text: upiString, width: 150, height: 150 });
+            } catch(e) { console.log("QR Gen error:", e); }
+        } else {
+            qrContainer.style.display = 'none';
+        }
+    }
+
+    // ======== SEND WHATSAPP ORDER ========
+    async function sendWhatsAppOrder() {
+        if (cart.length === 0) return alert('कार्ट खाली है!');
+        const custName = document.getElementById('custName').value.trim();
+        const custAddress = document.getElementById('custAddress').value.trim();
+        if (!custName || !custAddress) return alert('नाम और पता दर्ज करें!');
+
+        // Update stock in Firestore
+        if (db) {
+            try {
+                const collectionName = 'products_' + storeIdFromUrl;
+                for (const item of cart) {
+                    const prodRef = db.collection(collectionName).doc(item.id);
+                    const docSnap = await prodRef.get();
+                    if (docSnap.exists) {
+                        let currentStock = docSnap.data().stockQty !== undefined ? docSnap.data().stockQty : 10;
+                        let updatedStock = Math.max(0, currentStock - item.qty);
+                        await prodRef.update({ stockQty: updatedStock });
+                    }
+                }
+            } catch (err) {
+                console.error('स्टॉक अपडेट में त्रुटि: ', err);
+            }
+        }
+
+        let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        let discountAmt = (subtotal * appliedDiscountPercent) / 100;
+        let total = subtotal - discountAmt;
+
+        let text = `📦 *नया ऑर्डर - ${shopInfo.name || 'दुकान'}*\n`;
+        if (shopInfo.location) {
+            text += `📍 *दुकान लोकेशन:* ${shopInfo.location}\n`;
+        }
+        text += `---------------------------------\n👤 *ग्राहक:* ${custName}\n🏠 *डिलिवरी पता:* ${custAddress}\n---------------------------------\n📝 *ऑर्डर सूची:*\n`;
+        cart.forEach((item, index) => {
+            text += `${index + 1}. ${item.name} x ${item.qty} = ₹${(item.price * item.qty).toFixed(2)}\n`;
+        });
+        if (appliedDiscountPercent > 0) {
+            text += `---------------------------------\n🏷️ डिस्काउंट: -₹${discountAmt.toFixed(2)}`;
+        }
+        text += `---------------------------------\n💰 *कुल योग: ₹${total.toFixed(2)}*`;
+
+        let phone = shopInfo.phone || '919876543210';
+        if (!phone.startsWith('91') && phone.length === 10) phone = '91' + phone;
+
+        // Clear cart after order
+        cart = [];
+        renderCart();
+
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    // ======== ADMIN PRODUCT LIST (with i18n) ========
+    function renderAdminProducts() {
+        const adminList = document.getElementById('adminProductList');
+        if (!adminList) return;
+        adminList.innerHTML = '';
+        if (products.length === 0) {
+            adminList.innerHTML = `<p style="color:#777;">${t('noProducts')}</p>`;
+            return;
+        }
+        products.forEach(p => {
+            const stockQty = p.stockQty !== undefined ? p.stockQty : 10;
+            const stockStatusColor = stockQty > 0 ? 'color: var(--green);' : 'color: var(--red);';
+            adminList.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:6px 0; font-size:13px;">
+                    <span><strong>${p.name}</strong> - ₹${p.price} [${t('stockLeft')}: <span style="${stockStatusColor}">${stockQty}</span>]</span>
+                    <button class="btn-red" style="padding:3px 6px; font-size:11px;" onclick="deleteProduct('${p.id}')">🗑️</button>
+                </div>`;
+        });
+    }
+
+    // ======== IMAGE ZOOM MODAL ========
+    const modal = document.getElementById('zoomModal');
+    const zoomedImg = document.getElementById('zoomedImage');
+
+    function openZoomModal(src) {
+        if (modal) { zoomedImg.src = src; modal.style.display = 'block'; }
+    }
+
+    function closeZoomModal() {
+        if (modal) modal.style.display = 'none';
+    }
+
+    // ======== START ========
+    loadFirebaseData();
+    // Initial language update
+    updateTexts();
+</script>
+
+</body>
+</html>
