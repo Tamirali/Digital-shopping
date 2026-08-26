@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Dukaan & WhatsApp Catalog</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <!-- QRCode JS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .modal { transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 id="storeTitle" class="text-xl font-bold text-indigo-600 truncate">Digital Dukaan</h1>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleLanguage()" id="langBtn" class="px-3 py-1 text-sm bg-gray-100 rounded-full font-medium hover:bg-gray-200">English / हिंदी</button>
+                <button onclick="openCartModal()" class="relative bg-indigo-50 text-indigo-600 p-2 rounded-full hover:bg-indigo-100">
+                    <i class="fa-solid fa-shopping-cart text-lg"></i>
+                    <span id="cartCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">0</span>
+                </button>
+                <button onclick="openAdminModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Search & Filter Bar -->
+        <div class="mb-6 flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                <input type="text" id="searchInput" oninput="filterProducts()" placeholder="उत्पाद खोजें / Search products..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <select id="categoryFilter" onchange="filterProducts()" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <option value="">सभी श्रेणियाँ / All Categories</option>
+            </select>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <!-- Products will be loaded dynamically here -->
+        </div>
+    </main>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-end">
+        <div class="w-full max-w-md bg-white shadow-xl flex flex-col h-full">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h2 class="font-bold text-lg">आपकी कार्ट / Your Cart</h2>
+                <button onclick="closeCartModal()" class="text-gray-500 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="cartItemsList" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Cart items go here -->
+            </div>
+            <div class="p-4 border-t bg-gray-50 space-y-3">
+                <div class="flex justify-between items-center">
+                    <input type="text" id="couponInput" placeholder="कूपन कोड / Coupon Code" class="p-2 border rounded text-sm flex-1 mr-2">
+                    <button onclick="applyCoupon()" class="bg-gray-800 text-white px-3 py-2 rounded text-sm hover:bg-gray-700">लागू करें</button>
+                </div>
+                <div class="flex justify-between font-bold text-lg">
+                    <span>कुल / Total:</span>
+                    <span id="cartTotal">₹0</span>
+                </div>
+                <div class="space-y-2">
+                    <input type="text" id="customerName" placeholder="आपका नाम / Your Name" class="w-full p-2 border rounded text-sm">
+                    <input type="text" id="customerAddress" placeholder="पत्ता / Delivery Address" class="w-full p-2 border rounded text-sm">
+                </div>
+                <div id="qrContainer" class="hidden flex-col items-center justify-center p-2 bg-white border rounded">
+                    <p class="text-xs text-gray-500 mb-1">स्कैन करके भुगतान करें / Scan to Pay</p>
+                    <div id="qrcode"></div>
+                    <span id="upiDisplay" class="text-xs font-semibold mt-1"></span>
+                </div>
+                <button onclick="checkoutWhatsApp()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> WhatsApp पर ऑर्डर भेजें
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h2 class="font-bold text-lg">एडमिन पैनल / Admin Panel</h2>
+                <button onclick="closeAdminModal()" class="text-gray-500 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-3">
+                <h3 class="font-semibold text-sm text-gray-600">दुकान की जानकारी</h3>
+                <input type="text" id="adminStoreName" placeholder="दुकान का नाम" class="w-full p-2 border rounded text-sm">
+                <input type="text" id="adminUpi" placeholder="UPI ID" class="w-full p-2 border rounded text-sm">
+                <input type="text" id="adminPhone" placeholder="WhatsApp नंबर (Country code के साथ)" class="w-full p-2 border rounded text-sm">
+                <button onclick="saveStoreSettings()" class="w-full bg-indigo-600 text-white py-2 rounded font-semibold text-sm hover:bg-indigo-700">सेटिंग्स सेव करें</button>
+                
+                <hr class="my-3">
+                <h3 class="font-semibold text-sm text-gray-600">नया उत्पाद जोड़ें</h3>
+                <input type="text" id="prodName" placeholder="उत्पाद का नाम" class="w-full p-2 border rounded text-sm">
+                <input type="number" id="prodPrice" placeholder="कीमत (₹)" class="w-full p-2 border rounded text-sm">
+                <input type="text" id="prodCategory" placeholder="श्रेणी (Category)" class="w-full p-2 border rounded text-sm">
+                <input type="file" id="prodImage" accept="image/*" class="w-full p-2 border rounded text-sm">
+                <button onclick="addProduct()" class="w-full bg-green-600 text-white py-2 rounded font-semibold text-sm hover:bg-green-700">उत्पाद जोड़ें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Zoom Modal -->
+    <div id="zoomModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center p-4" onclick="closeZoomModal()">
+        <img id="zoomedImage" class="max-h-[90vh] max-w-[90vw] object-contain rounded">
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        let db;
+        let storeId = new URLSearchParams(window.location.search).get('store') || 'default_store';
+        let currentLang = 'hi';
+        let cart = [];
+        let products = [];
+        let shopInfo = { name: "Digital Dukaan", upi: "", phone: "" };
+        let appliedDiscount = 0;
+
+        // Firebase Initialization (Demo config - Replace with your own if needed)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForTemplate",
+            authDomain: "digital-dukaan.firebaseapp.com",
+            projectId: "digital-dukaan"
+        };
+
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+        } catch (e) {
+            console.warn("Firebase offline mode or config needed:", e);
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'hi' ? 'en' : 'hi';
+            updateTexts();
+        }
+
+        function updateTexts() {
+            document.getElementById('storeTitle').innerText = shopInfo.name;
+        }
+
+        function openCartModal() {
+            document.getElementById('cartModal').classList.remove('hidden');
+            renderCartItems();
+        }
+
+        function closeCartModal() {
+            document.getElementById('cartModal').classList.add('hidden');
+        }
+
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('adminStoreName').value = shopInfo.name;
+            document.getElementById('adminUpi').value = shopInfo.upi;
+            document.getElementById('adminPhone').value = shopInfo.phone;
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+
+            const filtered = products.filter(p => {
+                const matchesQuery = p.name.toLowerCase().includes(query);
+                const matchesCat = !category || p.category === category;
+                return matchesQuery && matchesCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">कोई उत्पाद नहीं मिला</p>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                grid.innerHTML += `
+                    <div class="bg-white border rounded-lg p-3 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <img src="${p.image || 'https://via.placeholder.com/150'}" onclick="openZoomModal('${p.image}')" class="w-full h-36 object-cover rounded mb-2 cursor-pointer">
+                            <h3 class="font-semibold text-sm truncate">${p.name}</h3>
+                            <p class="text-indigo-600 font-bold text-sm mt-1">₹${p.price}</p>
+                        </div>
+                        <button onclick="addToCart('${p.id}')" class="mt-3 w-full bg-indigo-50 text-indigo-600 py-1.5 rounded text-sm font-semibold hover:bg-indigo-100">कार्ट में जोड़ें</button>
+                    </div>`;
+            });
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCartCount();
+            alert('उत्पाद कार्ट में जोड़ दिया गया है!');
+        }
+
+        function updateCartCount() {
+            const count = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cartCount').innerText = count;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartCount();
+            renderCartItems();
+        }
+
+        function applyCoupon() {
+            const code = document.getElementById('couponInput').value.trim().toUpperCase();
+            if (code === 'SAVE10') {
+                appliedDiscount = 0.10;
+                alert('10% डिस्काउंट लागू हो गया है!');
+            } else if (code === 'SAVE20') {
+                appliedDiscount = 0.20;
+                alert('20% डिस्काउंट लागू हो गया है!');
+            } else {
+                appliedDiscount = 0;
+                alert('अमान्य कूपन कोड!');
+            }
+            renderCartItems();
+        }
+
+        function renderCartItems() {
+            const list = document.getElementById('cartItemsList');
+            list.innerHTML = '';
+            let subtotal = 0;
+            
+            if (cart.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-4">आपकी कार्ट खाली है</p>';
+                document.getElementById('cartTotal').innerText = '₹0';
+                document.getElementById('qrContainer').style.display = 'none';
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                subtotal += item.price * item.qty;
+                list.innerHTML += `
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div>
+                            <h4 class="font-semibold text-sm">${item.name}</h4>
+                            <p class="text-xs text-gray-500">₹${item.price} x ${item.qty}</p>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                    </div>`;
+            });
+
+            const total = subtotal * (1 - appliedDiscount);
+            document.getElementById('cartTotal').innerText = `₹${total.toFixed(2)}`;
+            
+            const qrContainer = document.getElementById('qrContainer');
+            const qrDiv = document.getElementById('qrcode');
+            const upiDisplay = document.getElementById('upiDisplay');
+
+            if (shopInfo.upi && total > 0) {
+                qrContainer.style.display = 'flex';
+                qrDiv.innerHTML = '';
+                const upiUrl = `upi://pay?pa=${shopInfo.upi}&pn=${encodeURIComponent(shopInfo.name)}&am=${total.toFixed(2)}&cu=INR`;
+                new QRCode(qrDiv, { text: upiUrl, width: 150, height: 150 });
+                upiDisplay.innerText = `UPI ID: ${shopInfo.upi}`;
+            } else {
+                qrContainer.style.display = 'none';
+            }
+        }
+
+        function checkoutWhatsApp() {
+            const name = document.getElementById('customerName').value;
+            const address = document.getElementById('customerAddress').value;
+            if (!name || !address) {
+                alert('कृपया अपना नाम और पता दर्ज करें!');
+                return;
+            }
+            if (!shopInfo.phone) {
+                alert('दुकानदार का WhatsApp नंबर सेट नहीं है!');
+                return;
+            }
+
+            let message = `*नया ऑर्डर मिला!*\n*नाम:* ${name}\n*पता:* ${address}\n\n*उत्पाद:* \n`;
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += item.price * item.qty;
+                message += `- ${item.name} (x${item.qty}) : ₹${item.price * item.qty}\n`;
+            });
+            const total = subtotal * (1 - appliedDiscount);
+            message += `\n*कुल राशि:* ₹${total.toFixed(2)}`;
+
+            const url = `https://wa.me/${shopInfo.phone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        function openZoomModal(imgSrc) {
+            document.getElementById('zoomedImage').src = imgSrc;
+            document.getElementById('zoomModal').classList.remove('hidden');
+        }
+
+        function closeZoomModal() {
+            document.getElementById('zoomModal').classList.add('hidden');
+        }
+
+        function saveStoreSettings() {
+            shopInfo.name = document.getElementById('adminStoreName').value || "Digital Dukaan";
+            shopInfo.upi = document.getElementById('adminUpi').value;
+            shopInfo.phone = document.getElementById('adminPhone').value;
+            updateTexts();
+            closeAdminModal();
+            alert('सेटिंग्स सेव हो गई हैं!');
+        }
+
+        function addProduct() {
+            const name = document.getElementById('prodName').value;
+            const price = parseFloat(document.getElementById('prodPrice').value);
+            const category = document.getElementById('prodCategory').value;
+            const fileInput = document.getElementById('prodImage');
+
+            if (!name || isNaN(price)) {
+                alert('कृपया सही नाम और कीमत भरें!');
+                return;
+            }
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    products.push({ id: Date.now().toString(), name, price, category, image: e.target.result });
+                    filterProducts();
+                    closeAdminModal();
+                    alert('उत्पाद सफलतापूर्वक जोड़ दिया गया!');
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                products.push({ id: Date.now().toString(), name, price, category, image: '' });
+                filterProducts();
+                closeAdminModal();
+                alert('उत्पाद सफलतापूर्वक जोड़ दिया गया!');
+            }
+        }
+
+        window.onload = function() {
+            updateTexts();
+            // डमी प्रोडक्ट्स ताकि स्क्रीन खाली न दिखे
+            products = [
+                { id: '1', name: 'सैंपल प्रोडक्ट 1', price: 299, category: 'General', image: 'https://via.placeholder.com/150' },
+                { id: '2', name: 'सैंपल प्रोडक्ट 2', price: 499, category: 'General', image: 'https://via.placeholder.com/150' }
+            ];
+            filterProducts();
+        };
+    </script>
+</body>
+</html>
